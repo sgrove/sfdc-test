@@ -1,26 +1,27 @@
+
 /* SetStage.js */
-import React from "react";
-import graphql from "babel-plugin-relay/macro";
-import { auth } from "./Config";
-import { useMutation } from "react-relay/hooks";
-import { suggestCORSSetup, LocationNote, updateFormVariables } from "./utils";
-import Oppty from "./Oppty";
+import React from 'react';
+import graphql from 'babel-plugin-relay/macro';
+import {auth} from './Config';
+import {useMutation} from 'react-relay/hooks';
+import {suggestCORSSetup, LocationNote, updateFormVariables} from "./utils";
+import Oppty from './Oppty'
+
 
 const SET_STAGE_MUTATION = graphql`
-  mutation SetStage_SetStageMutation($id: String!, $stageName: String!) {
+  mutation SetStage_SetStageMutation($id: String!, $stageName: String!, $amount: Float) {
     salesforce {
-      updateOpportunity(input: { patch: { stageName: $stageName }, id: $id }) {
+      updateOpportunity(input: {patch: {stageName: $stageName, amount: $amount}, id: $id}) {
         opportunity {
           ...Oppty_fragment
         }
       }
     }
-  }
-`;
+  }`;
 
 export default function SetStageMutation(props) {
   const [mutationResult, setMutationResult] = React.useState(() => null);
-  const [formVariables, setFormVariables] = React.useState({ ...props });
+  const [formVariables, setFormVariables] = React.useState({...props});
 
   const [commit, isInFlight] = useMutation(SET_STAGE_MUTATION);
 
@@ -28,58 +29,28 @@ export default function SetStageMutation(props) {
     commit({
       variables: formVariables,
       onError: (error) => {
-        setMutationResult({ errors: [error] });
+        setMutationResult({errors: [error]});
       },
       onCompleted: (response, errors) => {
-        setMutationResult({ data: response, errors: errors });
+        setMutationResult({data: response, errors: errors});
       },
     });
 
   const formEl = (
-    <form
-      onSubmit={(event) => {
-        event.preventDefault();
-        runMutation();
-      }}
-    >
-      <label htmlFor="id">id</label>
-      <input
-        id="id"
-        type="text"
-        onChange={updateFormVariables(
-          setFormVariables,
-          ["id"],
-          (value) => value
-        )}
-      />
-      <label htmlFor="stageName">stageName</label>
-      <input
-        id="stageName"
-        type="text"
-        onChange={updateFormVariables(
-          setFormVariables,
-          ["stageName"],
-          (value) => value
-        )}
-      />
+    <form onSubmit={event => { event.preventDefault(); runMutation(); }}>
+      <label htmlFor="id">id</label><input id="id" type="text" onChange={updateFormVariables(setFormVariables, ["id"], (value) => value)} />
+      <label htmlFor="stageName">stageName</label><input id="stageName" type="text" onChange={updateFormVariables(setFormVariables, ["stageName"], (value) => value)} />
+      <label htmlFor="amount">amount</label><input id="amount" type="number" step="0.1" onChange={updateFormVariables(setFormVariables, ["amount"], (value) => try {return parseFloat(value)} catch (e) { return 0.0 })} />
       <input type="submit" />
     </form>
   );
 
-  const opptyUses = (
-    <Oppty
-      opportunity={
-        mutationResult?.data?.salesforce?.updateOpportunity?.opportunity
-      }
-    />
-  );
+  const opptyUses = <Oppty  opportunity={mutationResult?.data?.salesforce?.updateOpportunity?.opportunity} />;
 
-  const dataEl = mutationResult?.data ? (
+const dataEl = mutationResult?.data ? (
     <div className="data-box">
       <h3>Data for SetStageMutation</h3>
-      <h4>
-        OpptyUses <LocationNote />
-      </h4>
+            <h4>OpptyUses <LocationNote /></h4>
       {opptyUses}
     </div>
   ) : null;
@@ -94,15 +65,13 @@ export default function SetStageMutation(props) {
     </div>
   ) : null;
 
-  const loadingEl = isInFlight ? (
-    <pre className="loading">Loading...</pre>
-  ) : null;
+  const loadingEl = isInFlight ? (<pre className="loading">Loading...</pre>) : null;
 
   const needsLoginService = auth.findMissingAuthServices(mutationResult)[0];
 
   const actionButton = (
     <button
-      className={!!needsLoginService ? "login-hint" : null}
+      className={!!needsLoginService ? 'login-hint' : null}
       onClick={async () => {
         if (!needsLoginService) {
           runMutation();
@@ -110,25 +79,20 @@ export default function SetStageMutation(props) {
           await auth.login(needsLoginService);
           const loginSuccess = await auth.isLoggedIn(needsLoginService);
           if (loginSuccess) {
-            console.log("Successfully logged into " + needsLoginService);
+            console.log('Successfully logged into ' + needsLoginService);
             runMutation();
           } else {
-            console.log("The user did not grant auth to " + needsLoginService);
+            console.log('The user did not grant auth to ' + needsLoginService);
           }
         }
-      }}
-    >
-      {needsLoginService
-        ? "Log in to " + needsLoginService
-        : "Run SetStageMutation"}
+      }}>
+      {needsLoginService ? 'Log in to ' + needsLoginService : 'Run SetStageMutation'}
     </button>
   );
 
   return (
     <div>
-      <h3>
-        SetStageMutation <LocationNote />
-      </h3>
+      <h3>SetStageMutation <LocationNote /></h3>
       {formEl}
       {actionButton}
       {loadingEl}
@@ -136,4 +100,4 @@ export default function SetStageMutation(props) {
       {errorEl}
     </div>
   );
-}
+};
